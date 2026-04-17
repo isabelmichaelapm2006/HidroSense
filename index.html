@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>HydroSense Monitor</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <h1>Monitoramento HydroSense</h1>
+  
+  <!-- Gráfico -->
+  <canvas id="umidadeChart" width="400" height="200"></canvas>
+  
+  <!-- Botões de controle da bomba -->
+  <button onclick="controlarBomba(true)">Ligar Bomba</button>
+  <button onclick="controlarBomba(false)">Desligar Bomba</button>
+  <p id="statusBomba">Status da bomba: Desconhecido</p>
+
+  <!-- Botão de exportação CSV -->
+  <button onclick="exportarCSV()">Exportar CSV</button>
+
+  <script>
+    const ctx = document.getElementById('umidadeChart').getContext('2d');
+    const umidadeChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: [{
+          label: 'Umidade do Solo (últimas 24h)',
+          data: [],
+          borderColor: 'blue',
+          fill: false
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          x: {
+            type: 'time',
+            time: { unit: 'hour' }
+          },
+          y: {
+            beginAtZero: true,
+            max: 1023
+          }
+        }
+      }
+    });
+
+    async function atualizarDados() {
+      const response = await fetch("http://localhost:3000/umidade");
+      const dados = await response.json();
+
+      umidadeChart.data.labels = dados.historico.map(r => r.tempo);
+      umidadeChart.data.datasets[0].data = dados.historico.map(r => r.umidade);
+      umidadeChart.update();
+
+      document.getElementById("statusBomba").innerText =
+        "Status da bomba: " + (dados.bomba ? "Ligada" : "Desligada");
+    }
+
+    async function controlarBomba(ligar) {
+      await fetch("http://localhost:3000/bomba", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ligar })
+      });
+      atualizarDados();
+    }
+
+    function exportarCSV() {
+      window.location.href = "http://localhost:3000/exportar";
+    }
+
+    setInterval(atualizarDados, 5000); // atualiza a cada 5 segundos
+  </script>
+</body>
+</html>
