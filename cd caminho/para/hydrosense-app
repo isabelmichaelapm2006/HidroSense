@@ -1,0 +1,6 @@
+git init
+git add .
+git commit -m "Primeiro commit HydroSense"
+git remote add origin https://github.com/SEU_USUARIO/hydrosense-app.git
+git branch -M main
+git push -u origin main
